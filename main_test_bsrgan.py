@@ -56,7 +56,7 @@ def main():
     for model_name in model_names:
         if model_name in ['BSRGANx2']:
             sf = 2
-        model_path = os.path.join('model_zoo', model_name+'.pth')          # set model path
+        model_path = os.path.join('model_zoo', f'{model_name}.pth')
         logger.info('{:>16s} : {:s}'.format('Model Name', model_name))
 
         # torch.cuda.set_device(0)      # set GPU ID
@@ -85,19 +85,13 @@ def main():
 
             L_path = os.path.join(testsets, testset_L)
             #E_path = os.path.join(testsets, testset_L+'_'+model_name)
-            E_path = os.path.join(testsets, testset_L+'_results_x'+str(sf))
+            E_path = os.path.join(testsets, f'{testset_L}_results_x{str(sf)}')
             util.mkdir(E_path)
 
             logger.info('{:>16s} : {:s}'.format('Input Path', L_path))
             logger.info('{:>16s} : {:s}'.format('Output Path', E_path))
-            idx = 0
+            for idx, img in enumerate(util.get_image_paths(L_path), start=1):
 
-            for img in util.get_image_paths(L_path):
-
-                # --------------------------------
-                # (1) img_L
-                # --------------------------------
-                idx += 1
                 img_name, ext = os.path.splitext(os.path.basename(img))
                 logger.info('{:->4d} --> {:<s} --> x{:<d}--> {:<s}'.format(idx, model_name, sf, img_name+ext))
 
@@ -115,7 +109,7 @@ def main():
                 # --------------------------------
                 img_E = util.tensor2uint(img_E)
                 if save_results:
-                    util.imsave(img_E, os.path.join(E_path, img_name+'_'+model_name+'.png'))
+                    util.imsave(img_E, os.path.join(E_path, f'{img_name}_{model_name}.png'))
 
 
 if __name__ == '__main__':
