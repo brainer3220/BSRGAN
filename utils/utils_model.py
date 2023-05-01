@@ -32,14 +32,13 @@ def find_last_checkpoint(save_dir, net_type='G'):
         init_path: model path
     # ---------------------------------------
     """
-    file_list = glob.glob(os.path.join(save_dir, '*_{}.pth'.format(net_type)))
-    if file_list:
+    if file_list := glob.glob(os.path.join(save_dir, f'*_{net_type}.pth')):
         iter_exist = []
         for file_ in file_list:
-            iter_current = re.findall(r"(\d+)_{}.pth".format(net_type), file_)
+            iter_current = re.findall(f"(\d+)_{net_type}.pth", file_)
             iter_exist.append(int(iter_current[0]))
         init_iter = max(iter_exist)
-        init_path = os.path.join(save_dir, '{}_{}.pth'.format(init_iter, net_type))
+        init_path = os.path.join(save_dir, f'{init_iter}_{net_type}.pth')
     else:
         init_iter = 0
         init_path = None
@@ -94,8 +93,7 @@ def test_mode(model, L, mode=0, refield=32, min_size=256, sf=1, modulo=1):
 
 
 def test(model, L):
-    E = model(L)
-    return E
+    return model(L)
 
 
 '''
@@ -170,8 +168,9 @@ def test_split_fn(model, L, refield=32, min_size=256, sf=1, modulo=1):
 
 
 def test_split(model, L, refield=32, min_size=256, sf=1, modulo=1):
-    E = test_split_fn(model, L, refield=refield, min_size=min_size, sf=sf, modulo=modulo)
-    return E
+    return test_split_fn(
+        model, L, refield=refield, min_size=min_size, sf=sf, modulo=modulo
+    )
 
 
 '''
@@ -184,13 +183,12 @@ def test_split(model, L, refield=32, min_size=256, sf=1, modulo=1):
 def test_x8(model, L, modulo=1, sf=1):
     E_list = [test_pad(model, util.augment_img_tensor4(L, mode=i), modulo=modulo, sf=sf) for i in range(8)]
     for i in range(len(E_list)):
-        if i == 3 or i == 5:
+        if i in [3, 5]:
             E_list[i] = util.augment_img_tensor4(E_list[i], mode=8 - i)
         else:
             E_list[i] = util.augment_img_tensor4(E_list[i], mode=i)
     output_cat = torch.stack(E_list, dim=0)
-    E = output_cat.mean(dim=0, keepdim=False)
-    return E
+    return output_cat.mean(dim=0, keepdim=False)
 
 
 '''
@@ -203,13 +201,12 @@ def test_x8(model, L, modulo=1, sf=1):
 def test_split_x8(model, L, refield=32, min_size=256, sf=1, modulo=1):
     E_list = [test_split_fn(model, util.augment_img_tensor4(L, mode=i), refield=refield, min_size=min_size, sf=sf, modulo=modulo) for i in range(8)]
     for k, i in enumerate(range(len(E_list))):
-        if i==3 or i==5:
+        if i in [3, 5]:
             E_list[k] = util.augment_img_tensor4(E_list[k], mode=8-i)
         else:
             E_list[k] = util.augment_img_tensor4(E_list[k], mode=i)
     output_cat = torch.stack(E_list, dim=0)
-    E = output_cat.mean(dim=0, keepdim=False)
-    return E
+    return output_cat.mean(dim=0, keepdim=False)
 
 
 '''
@@ -253,16 +250,14 @@ def print_params(model):
 # model inforation
 # --------------------------------------------
 def info_model(model):
-    msg = describe_model(model)
-    return msg
+    return describe_model(model)
 
 
 # --------------------------------------------
 # params inforation
 # --------------------------------------------
 def info_params(model):
-    msg = describe_params(model)
-    return msg
+    return describe_params(model)
 
 
 '''
@@ -279,9 +274,12 @@ def describe_model(model):
     if isinstance(model, torch.nn.DataParallel):
         model = model.module
     msg = '\n'
-    msg += 'models name: {}'.format(model.__class__.__name__) + '\n'
-    msg += 'Params number: {}'.format(sum(map(lambda x: x.numel(), model.parameters()))) + '\n'
-    msg += 'Net structure:\n{}'.format(str(model)) + '\n'
+    msg += f'models name: {model.__class__.__name__}' + '\n'
+    msg += (
+        f'Params number: {sum(map(lambda x: x.numel(), model.parameters()))}'
+        + '\n'
+    )
+    msg += f'Net structure:\n{str(model)}' + '\n'
     return msg
 
 
@@ -294,7 +292,7 @@ def describe_params(model):
     msg = '\n'
     msg += ' | {:^6s} | {:^6s} | {:^6s} | {:^6s} || {:<20s}'.format('mean', 'min', 'max', 'std', 'param_name') + '\n'
     for name, param in model.state_dict().items():
-        if not 'num_batches_tracked' in name:
+        if 'num_batches_tracked' not in name:
             v = param.data.clone().float()
             msg += ' | {:>6.3f} | {:>6.3f} | {:>6.3f} | {:>6.3f} || {:s}'.format(v.mean(), v.min(), v.max(), v.std(), name) + '\n'
     return msg
